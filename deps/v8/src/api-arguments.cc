@@ -13,41 +13,12 @@
 namespace v8 {
 namespace internal {
 
-Handle<Object> FunctionCallbackArguments::Call(FunctionCallback f) {
-  Isolate* isolate = this->isolate();
-  if (isolate->needs_side_effect_check() &&
-      !isolate->debug()->PerformSideEffectCheckForCallback(FUNCTION_ADDR(f))) {
-    return Handle<Object>();
-  }
-  RuntimeCallTimerScope timer(isolate, RuntimeCallCounterId::kFunctionCallback);
-  VMState<EXTERNAL> state(isolate);
-  ExternalCallbackScope call_scope(isolate, FUNCTION_ADDR(f));
-  FunctionCallbackInfo<v8::Value> info(begin(), argv_, argc_);
-  f(info);
-  return GetReturnValue<Object>(isolate);
-}
-
-Handle<JSObject> PropertyCallbackArguments::CallNamedEnumerator(
-    Handle<InterceptorInfo> interceptor) {
-  DCHECK(interceptor->is_named());
-  LOG(isolate(), ApiObjectAccess("interceptor-named-enumerator", holder()));
-  RuntimeCallTimerScope timer(isolate(),
-                              RuntimeCallCounterId::kNamedEnumeratorCallback);
-  return CallPropertyEnumerator(interceptor);
-}
-
-Handle<JSObject> PropertyCallbackArguments::CallIndexedEnumerator(
-    Handle<InterceptorInfo> interceptor) {
-  DCHECK(!interceptor->is_named());
-  LOG(isolate(), ApiObjectAccess("interceptor-indexed-enumerator", holder()));
-  RuntimeCallTimerScope timer(isolate(),
-                              RuntimeCallCounterId::kIndexedEnumeratorCallback);
-  return CallPropertyEnumerator(interceptor);
-}
-
-bool PropertyCallbackArguments::PerformSideEffectCheck(Isolate* isolate,
-                                                       Address function) {
-  return isolate->debug()->PerformSideEffectCheckForCallback(function);
+// static
+bool CustomArgumentsBase ::PerformSideEffectCheck(Isolate* isolate,
+                                                  Object* callback_info) {
+  // TODO(7515): always pass a valid callback info object.
+  if (callback_info == nullptr) return false;
+  return isolate->debug()->PerformSideEffectCheckForCallback(callback_info);
 }
 
 }  // namespace internal
